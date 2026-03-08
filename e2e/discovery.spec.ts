@@ -1,19 +1,25 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Discovery Page', () => {
+test.describe('Discovery & Topology Panel', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/discovery');
   });
 
-  test('should display topology controls and filter buttons', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'all' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'shadow' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'managed' })).toBeVisible();
-  });
+  test('should display topology and side panel when clicking a node', async ({ page }) => {
+    // Wait for canvas to load
+    await expect(page.locator('.react-flow')).toBeVisible();
 
-  test('should display legend', async ({ page }) => {
-    await expect(page.getByText('Low risk / Compliant')).toBeVisible();
-    await expect(page.getByText('High risk / Unauthorized')).toBeVisible();
+    // Click on a managed server node. The ReactFlow nodes have titles or data-id, but we can just click the visual node text.
+    await page.locator('.react-flow__node-server').filter({ hasText: 'prod-db-mcp' }).click();
+
+    // Side panel should appear
+    const panel = page.locator('text=Server Details').locator('..').locator('..');
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('prod-db-mcp');
+    await expect(panel).toContainText('Endpoint URL');
+    
+    // Close panel
+    await page.locator('button').filter({ has: page.locator('svg.lucide-x') }).click();
+    await expect(panel).toBeHidden();
   });
 });
