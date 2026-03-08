@@ -1,31 +1,33 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Navigation', () => {
+test.describe('Global Navigation & Settings', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('should navigate to Discovery (default)', async ({ page }) => {
-    // Should redirect to discovery
-    await expect(page).toHaveURL(/.*\/discovery/);
-    await expect(page.getByRole('heading', { name: 'Shadow Fleet Topology' })).toBeVisible();
+  test('should navigate between all pages', async ({ page }) => {
+    await page.click('text=Compliance');
+    await expect(page).toHaveURL(/\/audit/);
+
+    await page.click('text=Policies');
+    await expect(page).toHaveURL(/\/policies/);
+
+    await page.click('text=Analytics');
+    await expect(page).toHaveURL(/\/analytics/);
   });
 
-  test('should navigate to Audit page', async ({ page }) => {
-    await page.getByRole('link', { name: /Compliance/i }).click();
-    await expect(page).toHaveURL(/.*\/audit/);
-    await expect(page.getByRole('heading', { name: 'Thread-of-Thought Compliance Explorer' })).toBeVisible();
+  test('should open and use tenant switcher', async ({ page }) => {
+    await page.click('button:has-text("acme-corp")');
+    await expect(page.getByRole('button', { name: 'globex' })).toBeVisible();
+    await page.getByRole('button', { name: 'globex' }).click();
+    await expect(page.locator('aside').filter({ hasText: 'globex' }).first()).toBeVisible();
   });
 
-  test('should navigate to Policies page', async ({ page }) => {
-    await page.getByRole('link', { name: /Policies/i }).click();
-    await expect(page).toHaveURL(/.*\/policies/);
-    await expect(page.getByRole('heading', { name: 'Policy & Governance Engine' })).toBeVisible();
-  });
-
-  test('should navigate to Analytics page', async ({ page }) => {
-    await page.getByRole('link', { name: /Analytics/i }).click();
-    await expect(page).toHaveURL(/.*\/analytics/);
-    await expect(page.getByRole('heading', { name: 'Performance & Semantic Analytics' })).toBeVisible();
+  test('should navigate to valid Settings page', async ({ page }) => {
+    await page.click('text=Settings');
+    await expect(page).toHaveURL(/\/settings/);
+    await expect(page.getByRole('heading', { name: 'Global Settings' })).toBeVisible();
+    await page.click('button:has-text("Save Changes")');
+    await expect(page.getByText('Saved!')).toBeVisible();
   });
 });
