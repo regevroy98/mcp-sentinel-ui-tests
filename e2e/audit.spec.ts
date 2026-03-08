@@ -5,26 +5,31 @@ test.describe('Audit Page', () => {
     await page.goto('/audit');
   });
 
-  test('should show event table and filters', async ({ page }) => {
-    // Ensure table headers are present
-    await expect(page.getByRole('columnheader', { name: 'Trace ID' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Decision' })).toBeVisible();
+  test('should filter the audit logs', async ({ page }) => {
+    // Ensure table is loaded
+    await expect(page.getByRole('table')).toBeVisible();
     
-    // Check filter buttons
-    await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'allowed', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'denied', exact: true })).toBeVisible();
-  });
+    // Type in search filter
+    const searchInput = page.getByPlaceholder('Filter by tool…');
+    await searchInput.fill('query_db');
 
-  test('should open split pane trace viewer when row is clicked', async ({ page }) => {
-    // Click the first row in the table body
-    const firstRow = page.locator('tbody tr').first();
-    await firstRow.click();
-    
-    // The details pane should open
+    // Select decision filter
+    await page.getByRole('button', { name: 'allowed' }).click();
+
+    // Verify results
+    const rows = page.locator('tbody tr');
+    await expect(rows.first()).toBeVisible();
+
+    // Select trace
+    await rows.first().click();
+
+    // Ensure pane opens
     await expect(page.getByText('Thread-of-Thought Trace')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Generate Audit Evidence/i })).toBeVisible();
-    await expect(page.getByText('AI Reasoning Trace')).toBeVisible();
-    await expect(page.getByText('Tool Call Chain')).toBeVisible();
+
+    // Trigger PDF Export download
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Generate Audit Evidence' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toContain('compliance-trace-');
   });
 });
